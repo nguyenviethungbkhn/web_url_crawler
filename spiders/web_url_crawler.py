@@ -5,6 +5,7 @@ from scrapy.exceptions import CloseSpider
 from ..items import WebUrlItem
 import sys
 import pandas as pd
+from twisted.internet.error import ConnectionLost, TCPTimedOutError, TimeoutError
 
 class WebUrlCrawler(CrawlSpider):
     name = "web_url_crawler"
@@ -24,8 +25,13 @@ class WebUrlCrawler(CrawlSpider):
     def make_requests_from_url(self, url):
         if 'http' not in url:
             url = 'https://' + url
-        return Request(url,  self.parse, dont_filter=True)
+        return Request(url, callback=self.parse, errback=self.errback_httpbin, dont_filter=True)
     
+    def errback_httpbin(self, failure):
+        if failure.check(ConnectionLost, TCPTimedOutError, TimeoutError):
+            url = url.replace("https", "http")
+            return Request(url, callback=self.parse, dont_filter=True)
+
     def parse(self, response):
         item = WebUrlItem()
         item["url"] = response.url
