@@ -101,3 +101,14 @@ class WebUrlCrawlerDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
+from twisted.internet.error import TCPTimedOutError, TimeoutError, ConnectionLost
+
+class ErrorRetryMiddleware(RetryMiddleware):
+
+    def process_exception(self, request, exception, spider):   
+        if isinstance(exception, TimeoutError) or isinstance(exception, TCPTimedOutError) or isinstance(exception, ConnectionLost): 
+            url = request.url
+            r = request.replace(url = url.replace("https", "http"))
+            return self._retry(r, exception, spider)

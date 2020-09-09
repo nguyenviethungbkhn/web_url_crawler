@@ -29,7 +29,6 @@ class WebUrlCrawler(CrawlSpider):
     
     def errback_httpbin(self, failure):
         url = failure.request.url
-        print("aaaa")
         if failure.check(ConnectionLost, TCPTimedOutError, TimeoutError):
             url = url.replace("https", "http")
             return Request(url, callback=self.parse, dont_filter=True)
